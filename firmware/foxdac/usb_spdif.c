@@ -54,7 +54,6 @@ struct audio_device_config {
     struct __packed {
         USB_Audio_StdDescriptor_Interface_AC_t core;
         USB_Audio_StdDescriptor_InputTerminal_t input_terminal;
-        USB_Audio_StdDescriptor_FeatureUnit_t feature_unit;
         USB_Audio_StdDescriptor_OutputTerminal_t output_terminal;
     } ac_audio;
     struct usb_interface_descriptor as_zero_interface;
@@ -116,16 +115,6 @@ static const struct audio_device_config audio_device_config = {
                         .wChannelConfig = AUDIO_CHANNEL_LEFT_FRONT | AUDIO_CHANNEL_RIGHT_FRONT,
                         .iChannelNames = 0,
                         .iTerminal = 0,
-                },
-                .feature_unit = { // TODO: remove hardware volume support or add software volume support //
-                        .bLength = sizeof(audio_device_config.ac_audio.feature_unit),
-                        .bDescriptorType = AUDIO_DTYPE_CSInterface,
-                        .bDescriptorSubtype = AUDIO_DSUBTYPE_CSInterface_Feature,
-                        .bUnitID = 2,
-                        .bSourceID = 1,
-                        .bControlSize = 1,
-                        .bmaControls = {AUDIO_FEATURE_MUTE | AUDIO_FEATURE_VOLUME, 0, 0},
-                        .iFeature = 0,
                 },
                 .output_terminal = {
                         .bLength = sizeof(audio_device_config.ac_audio.output_terminal),
