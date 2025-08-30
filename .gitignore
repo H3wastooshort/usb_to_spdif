@@ -12,3 +12,6 @@ _deps
 firmware/build/*
 firmware/build_release/*
 firmware/eclipse_build/*
+pico-sdk
+build
+.vscode

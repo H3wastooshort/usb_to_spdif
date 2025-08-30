@@ -1,5 +1,0 @@
-add_subdirectory(ssd1306)
-add_subdirectory(encoder)
-add_subdirectory(wm8805)
-add_subdirectory(tpa6130)
-add_subdirectory(lfs)

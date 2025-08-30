@@ -321,9 +321,6 @@ static void __time_critical_func(audio_start_dma_transfer)() {
     shared_state.playing_buffer = ab;
     if (!ab) {
 
-        extern volatile uint8_t ui_suspended;
-        if(!ui_suspended) gpio_put(18, 1);
-
         //DEBUG_PINS_XOR(audio_timing, 1);
         //DEBUG_PINS_XOR(audio_timing, 2);
         //DEBUG_PINS_XOR(audio_timing, 1);

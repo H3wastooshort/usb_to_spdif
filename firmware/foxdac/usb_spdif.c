@@ -18,14 +18,6 @@
 #include "hardware/watchdog.h"
 #include "lufa/AudioClassCommon.h"
 
-#include "ui/ui.h"
-#include "ui/spectrum.h"
-
-#include "drivers/wm8805/wm8805.h"
-#include "drivers/tpa6130/tpa6130.h"
-#include "drivers/ssd1306/ssd1306.h"
-
-#include "dsp/biquad_eq.h"
 
 CU_REGISTER_DEBUG_PINS(audio_timing)
 
@@ -34,8 +26,8 @@ CU_REGISTER_DEBUG_PINS(audio_timing)
 
 static char *descriptor_strings[] =
 {
-        "astanoev.com",
-        "FoxDAC",
+        "H3 & astanoev.com",
+        "USB to S/PDIF",
         "0123456789AB"
 };
 
@@ -125,7 +117,7 @@ static const struct audio_device_config audio_device_config = {
                         .iChannelNames = 0,
                         .iTerminal = 0,
                 },
-                .feature_unit = {
+                .feature_unit = { // TODO: remove hardware volume support or add software volume support //
                         .bLength = sizeof(audio_device_config.ac_audio.feature_unit),
                         .bDescriptorType = AUDIO_DTYPE_CSInterface,
                         .bDescriptorSubtype = AUDIO_DSUBTYPE_CSInterface_Feature,
@@ -340,10 +332,6 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) {
     //    out[i] = (int16_t) ((in[i] * vol_mul) >> 15u);
     //}
 
-    spectrum_consume_samples(out, audio_buffer->sample_count, audio_state.freq);
-
-    biquad_eq_process_inplace(out, audio_buffer->sample_count);
-
     give_audio_buffer(producer_pool, audio_buffer);
     gpio_put(25, 0);
 
@@ -524,8 +512,6 @@ static void _audio_reconfigure() {
     // todo hack overwriting const
     ((struct audio_format *) producer_pool->format)->sample_freq = audio_state.freq;
 
-    biquad_eq_set_fs(audio_state.freq);
-
     rate = audio_state.freq;
     sof_dma_buf_filled = 0;
     sof_dma_buf_pos = 0;
@@ -537,8 +523,6 @@ static void audio_set_volume(int16_t volume) {
     volume += CENTER_VOLUME_INDEX * 256;
     if (volume < 0) volume = 0;
     if (volume >= count_of(db_to_vol) * 256) volume = count_of(db_to_vol) * 256 - 1;
-
-    //UI_SetVolume(((uint16_t)volume) >> 8u); // 0 to 23296 -> 0 to 91
 
     audio_state.vol_mul = db_to_vol[((uint16_t)volume) >> 8u];
     //    printf("VOL MUL %04x\n", audio_state.vol_mul);
@@ -712,28 +696,6 @@ struct audio_buffer_format producer_format = {
 
 // Core split:
 // core 0 handles high-priority tasks: USB and SPDIF IRQs
-// core 1 handles low-priority tasks: LVGL, OLED, WM8805 polling and TPA6130 volume
-
-static void core1_worker() {
-    watchdog_update();
-    biquad_eq_init_core1();
-
-    // Init the oled twice, in case the first time glitched
-    busy_wait_ms(50);
-    oled_init();
-    busy_wait_ms(50);
-    oled_init();
-
-    // Init LVGL and all screens
-    ui_init();
-
-    while(1) {
-        ui_loop();
-        watchdog_update();
-
-        __wfe();
-    }
-}
 
 void core0_init() {
     // Set regulator into PWM mode
@@ -752,9 +714,6 @@ void core0_init() {
     // Grant high bus priority to the DMA
     bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_DMA_W_BITS | BUSCTRL_BUS_PRIORITY_DMA_R_BITS;
 
-    // Init EQ
-    biquad_eq_init();
-
     producer_pool = audio_new_producer_pool(&producer_format, AUDIO_BUFFER_COUNT, 192);
 
     const struct audio_format *output_format;
@@ -768,12 +727,6 @@ void core0_init() {
 
     //irq_set_priority(USBCTRL_IRQ, 0x40);
     usb_sound_card_init();
-
-    // Init the WM8805 SPDIF receiver
-    wm8805_init();
-
-    // Init the TPA6130 headphone amp
-    tpa6130_init();
 
     // Start up the SPDIF PIO (core 0)
     irq_set_priority(DMA_IRQ_0 + PICO_AUDIO_SPDIF_DMA_IRQ, PICO_HIGHEST_IRQ_PRIORITY);
@@ -795,13 +748,10 @@ int main(void) {
     stdout_uart_init();
 
     // Watchdog @8.3sec (updated from core 1)
-    watchdog_enable(0x7fffff, 1);
+    // watchdog_enable(0x7fffff, 1);
 
     // Init H/W and USB audio
     core0_init();
-
-    // Run low-priority UI core
-    multicore_launch_core1(core1_worker);
 
     while (1) {
         __wfe();
