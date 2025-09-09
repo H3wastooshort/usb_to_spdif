@@ -25,6 +25,6 @@ if (TARGET usb_device)
             PICO_DEFAULT_UART_TX_PIN=16
     )
 
-    target_link_libraries(foxdac pico_stdlib usb_device pico_audio_spdif pico_multicore)
+    target_link_libraries(foxdac pico_stdlib usb_device pico_audio_spdif pico_multicore pico_unique_id)
     pico_add_extra_outputs(foxdac)
 endif()
