@@ -19,10 +19,10 @@ if (TARGET usb_device)
 
             PICO_USBDEV_ISOCHRONOUS_BUFFER_STRIDE_TYPE=2
 
-            PICO_AUDIO_SPDIF_PIN=9
+            PICO_AUDIO_SPDIF_PIN=15
             PICO_AUDIO_SPDIF_DMA_IRQ=1
             
-            PICO_DEFAULT_UART_TX_PIN=16
+            PICO_DEFAULT_UART_TX_PIN=12
     )
 
     target_link_libraries(foxdac pico_stdlib usb_device pico_audio_spdif pico_multicore pico_unique_id)
