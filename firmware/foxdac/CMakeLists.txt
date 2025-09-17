@@ -19,7 +19,7 @@ if (TARGET usb_device)
 
             PICO_USBDEV_ISOCHRONOUS_BUFFER_STRIDE_TYPE=2
 
-            PICO_AUDIO_SPDIF_PIN=15
+            PICO_AUDIO_SPDIF_PIN=15 # 14 for v1 ; 15 for v2
             PICO_AUDIO_SPDIF_DMA_IRQ=1
             
             PICO_DEFAULT_UART_TX_PIN=12
