@@ -327,8 +327,10 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) {
     int16_t *out = (int16_t *) audio_buffer->buffer->bytes;
     int16_t *in = (int16_t *) usb_buffer->data;
 
-    memcpy(out, in, usb_buffer->data_len);
+    //memcpy(out, in, usb_buffer->data_len);
 
+    //adjust volume by scaling data
+    //TODO: 16bit scale
     for (int i = 0; i < audio_buffer->sample_count * 2; i++) {
         out[i] = (int16_t) ((in[i] * vol_mul) >> 15u);
     }
