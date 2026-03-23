@@ -308,16 +308,6 @@ void __not_in_flash_func(usb_sof_irq)(void) {
     //gpio_put(18, !gpio_get(18));
 }
 
-static void gain_process_inplace(int16_t* samples, int16_t len, uint16_t scale) {
-    uint_fast32_t temp;
-    for (int16_t i = 0; i < len; i++) {
-        temp = samples[i];
-        temp *= 0xffff;
-        temp /= scale;
-        samples[i] = temp;
-    }
-}
-
 static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) {
     assert(ep->current_transfer);
     struct usb_buffer *usb_buffer = usb_current_out_packet_buffer(ep);
@@ -339,11 +329,9 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) {
 
     memcpy(out, in, usb_buffer->data_len);
 
-    //for (int i = 0; i < audio_buffer->sample_count * 2; i++) {
-    //    out[i] = (int16_t) ((in[i] * vol_mul) >> 15u);
-    //}
-
-    gain_process_inplace(out, audio_buffer->sample_count, audio_state.vol_mul);
+    for (int i = 0; i < audio_buffer->sample_count * 2; i++) {
+        out[i] = (int16_t) ((in[i] * vol_mul) >> 15u);
+    }
 
     give_audio_buffer(producer_pool, audio_buffer);
     gpio_put(25, 0);
@@ -428,7 +416,18 @@ static bool do_get_current(struct usb_setup_packet *setup) {
 
 // todo this seemed like aood guess, but is not correct
 uint16_t db_to_vol[91] = {
-    2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 6, 6, 8, 8, 10, 10, 12, 14, 16, 18, 20, 22, 26, 28, 32, 36, 40, 46, 52, 58, 64, 72, 82, 92, 102, 116, 130, 146, 164, 184, 206, 232, 260, 292, 328, 368, 412, 462, 520, 584, 654, 734, 824, 924, 1038, 1164, 1306, 1466, 1646, 1846, 2072, 2324, 2608, 2926, 3284, 3684, 4134, 4638, 5204, 5840, 6552, 7352, 8250, 9256, 10386, 11654, 13076, 14670, 16460, 18470, 20724, 23252, 26090, 29272, 32844, 36852, 41350, 46394, 52056, 58408, 65534
+        0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0001, 0x0002, 0x0002,
+        0x0002, 0x0002, 0x0003, 0x0003, 0x0004, 0x0004, 0x0005, 0x0005,
+        0x0006, 0x0007, 0x0008, 0x0009, 0x000a, 0x000b, 0x000d, 0x000e,
+        0x0010, 0x0012, 0x0014, 0x0017, 0x001a, 0x001d, 0x0020, 0x0024,
+        0x0029, 0x002e, 0x0033, 0x003a, 0x0041, 0x0049, 0x0052, 0x005c,
+        0x0067, 0x0074, 0x0082, 0x0092, 0x00a4, 0x00b8, 0x00ce, 0x00e7,
+        0x0104, 0x0124, 0x0147, 0x016f, 0x019c, 0x01ce, 0x0207, 0x0246,
+        0x028d, 0x02dd, 0x0337, 0x039b, 0x040c, 0x048a, 0x0518, 0x05b7,
+        0x066a, 0x0732, 0x0813, 0x090f, 0x0a2a, 0x0b68, 0x0ccc, 0x0e5c,
+        0x101d, 0x1214, 0x1449, 0x16c3, 0x198a, 0x1ca7, 0x2026, 0x2413,
+        0x287a, 0x2d6a, 0x32f5, 0x392c, 0x4026, 0x47fa, 0x50c3, 0x5a9d,
+        0x65ac, 0x7214, 0x7fff
 };
 
 // actually windows doesn't seem to like this in the middle, so set top range to 0db
